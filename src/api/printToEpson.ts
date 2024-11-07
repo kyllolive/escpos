@@ -1,8 +1,6 @@
 import express from "express";
 import { Printer, Image } from "@node-escpos/core";
-// install escpos-usb adapter module manually
 import USB from "@node-escpos/usb-adapter";
-// Select the adapter based on your printer type
 import { join } from "path";
 
 const router = express.Router();
@@ -14,24 +12,26 @@ router.post<{}, any>("/", (req, res) => {
 
   device.open(async function (err) {
     if (err) {
-      // handle error
+      console.error("Error opening device:", err);
+      res.status(500).json({ message: "Error opening device" });
       return;
     }
 
-    // encoding is optional
-
-    //encoding should be set to english by default
-
-    const options = { encoding: "UTF-8" /* default */ };
+    const options = { encoding: "UTF-8" };
 
     let printer = new Printer(device, options);
 
-    printer.font("a").text(body.message);
-
-    printer.cut().close();
-  });
-  res.json({
-    message: "Printed",
+    try {
+      printer.font("a").text(body.message);
+      //printer.cut();
+      await printer.close();
+      res.json({ message: "Printed" });
+    } catch (error) {
+      console.error("Error printing:", error);
+      res.status(500).json({ message: "Error printing" });
+    } finally {
+      device.close();
+    }
   });
 });
 
