@@ -20,9 +20,12 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@node-escpos/core": "^0.6.0",
+    "@node-escpos/usb-adapter": "^0.3.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "escpos": "^3.0.0-alpha.6",
+    "escpos-usb": "^3.0.0-alpha.4",
     "express": "^4.21.1",
     "helmet": "^8.0.0",
     "morgan": "^1.10.0"
