@@ -35,3 +35,5 @@ REM echo INSTALLING grunt-less grunt-copy grunt-clean grunt-compress ...
 REM call npm install grunt-contrib-less grunt-contrib-copy grunt-contrib-clean grunt-contrib-compress
 cd %SETUP_DIR%
 echo DONE!
+
+pause
