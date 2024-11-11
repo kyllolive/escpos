@@ -22,8 +22,10 @@
   "dependencies": {
     "@node-escpos/core": "^0.6.0",
     "@node-escpos/usb-adapter": "^0.3.1",
+    "@yao-pkg/pkg": "^6.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "esbuild": "^0.24.0",
     "escpos": "^3.0.0-alpha.6",
     "escpos-usb": "^3.0.0-alpha.4",
     "express": "^4.21.1",
