@@ -4,13 +4,16 @@
   "description": " A basic starter for an express.js API with Typescript",
   "main": "src/index.ts",
   "scripts": {
+    "pm2": "tsc && pm2 start pm2.config.js && pm2 save",
     "start": "ts-node src/index.ts",
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "start:dist": "node dist/src/index.js",
     "lint": "eslint --fix src test",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "sea": "tsc && esbuild dist/src/index.js --bundle --minify --outfile=print-server.js --platform=node",
+    "pkg": "npm run build && pkg dist/src/index.js --output print-server"
   },
   "keywords": [],
   "author": "CJ R. <cj@null.computer> (https://w3cj.now.sh)",
@@ -30,7 +33,8 @@
     "escpos-usb": "^3.0.0-alpha.4",
     "express": "^4.21.1",
     "helmet": "^8.0.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "pm2": "^5.4.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

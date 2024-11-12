@@ -1,114 +1,140 @@
+:: This script installs Chocolatey and some programs
 @echo off
-setlocal
+cls
 
-REM Log file setup
-set LOGFILE=install_log.txt
-echo Installation Log - %DATE% %TIME% > %LOGFILE%
+set $choco_install=Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
-REM Function to log messages
-set echo_log=echo %1 | tee -a %LOGFILE%
+set $program_install=choco install
+set $upgrade_install=choco upgrade all
+set $programs=googlechrome git vscode sublimetext3 discord k-litecodecpackfull
+:: Add nodejs and pm2 to potential installations
+set $node_programs=nodejs.install pm2
 
-echo Checking if Node.js is installed... | tee -a %LOGFILE%
-node -v >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    echo Node.js is not installed. Attempting to install Node.js... | tee -a %LOGFILE%
+:choice
+set /P c=Install Chocolatey, Install/Upgrade packages, or Setup Node Server [[92mY[0m/[91mN[0m]? 
+if /I "%c%" EQU "Y" goto :install
+if /I "%c%" EQU "N" goto :exit
 
-    REM Check if PowerShell is available and its version
-    echo Checking for PowerShell version... | tee -a %LOGFILE%
-    powershell -Command "$psversion = $PSVersionTable.PSVersion; if ($psversion -and $psversion.Major -ge 3) { exit 0 } else { exit 1 }"
-    IF %ERRORLEVEL% EQU 0 (
-        echo PowerShell 3.0 or higher detected. Downloading Node.js installer... | tee -a %LOGFILE%
-        powershell -Command "Invoke-WebRequest -Uri https://nodejs.org/dist/v18.17.1/node-v18.17.1-x64.msi -OutFile nodejs_installer.msi"
-    ) ELSE (
-        echo PowerShell 3.0 or higher is not available. Using bitsadmin for download... | tee -a %LOGFILE%
-        bitsadmin /transfer "NodeJS Download" https://nodejs.org/dist/v18.17.1/node-v18.17.1-x64.msi %cd%\nodejs_installer.msi
-    )
+echo [91mError[0m Invalid choice
+goto :choice
 
-    REM Check if the installer was downloaded successfully
-    if not exist "nodejs_installer.msi" (
-        echo Node.js installer download failed. Exiting script. | tee -a %LOGFILE%
-        pause
-        exit /b 1
-    )
+:install
 
-    echo Installing Node.js... | tee -a %LOGFILE%
-    msiexec /i nodejs_installer.msi /quiet /norestart
+:: Checks if choco is a recognized command
+WHERE choco >nul
+if %ERRORLEVEL% neq 0 echo choco not installed yet & goto :install_choco
+echo [92mchoco already installed[0m & goto :install_upgrade_programs
 
-    echo Cleaning up Node.js installer file... | tee -a %LOGFILE%
-    del nodejs_installer.msi
+:: Installs choco
+:install_choco
+echo.
+echo [92mInstalling Chocolatey...[0m
 
-    echo Adding Node.js to PATH... | tee -a %LOGFILE%
-    setx PATH "%PATH%;%ProgramFiles%\nodejs"
-) ELSE (
-    echo Node.js is already installed. | tee -a %LOGFILE%
-)
+for /f "delims=" %%a in ('powershell -command Get-ExecutionPolicy') do set "$policy_value=%%a"
 
-REM Verify Node.js installation
-echo Verifying Node.js installation... | tee -a %LOGFILE%
-node -v >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    echo Node.js installation failed. Exiting script. | tee -a %LOGFILE%
-    pause
-    exit /b 1
-) ELSE (
-    echo Node.js installation verified. | tee -a %LOGFILE%
-)
+echo Get-ExecutionPolicy : %$policy_value%
 
-REM Navigate to the app directory
-echo Navigating to the application directory... | tee -a %LOGFILE%
-cd /d %~dp0
+if %$policy_value%==Restricted start powershell -Command "&{ Start-Process powershell -ArgumentList '-command Set-ExecutionPolicy AllSigned' -Verb RunAs}"
 
-REM Install dependencies
-echo Installing application dependencies with npm... | tee -a %LOGFILE%
-npm install >> %LOGFILE% 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    echo Failed to install dependencies. Exiting script. | tee -a %LOGFILE%
-    pause
-    exit /b 1
-)
+:: Resolves a problem of '' inside ''
+set $choco_install=%$choco_install:'=''%
+powershell -Command "&{ Start-Process powershell -ArgumentList '-command %$choco_install%' -Verb RunAs}"
+goto :install_upgrade_programs
 
-REM Build the application
-echo Building the application... | tee -a %LOGFILE%
-npm run build >> %LOGFILE% 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    echo Failed to build the application. Exiting script. | tee -a %LOGFILE%
-    pause
-    exit /b 1
-)
+:: Installs or Upgrades programs from choco
+:install_upgrade_programs
+echo.
 
-REM Install pm2 globally
-echo Installing pm2 globally... | tee -a %LOGFILE%
-npm install -g pm2 >> %LOGFILE% 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    echo Failed to install PM2. Exiting script. | tee -a %LOGFILE%
-    pause
-    exit /b 1
-)
+:programs_operation_choice
+choice /c IU /n /t 10 /d I /m "[I]nstall or [U]pgrade packages [I/U]? "
+if errorlevel 2 goto :upgrade_programs
+if errorlevel 1 goto :install_programs
 
-REM Ensure PM2 is available in PATH for the current session
-set PATH=%APPDATA%\npm;%PATH%
+:install_programs
 
-REM Start the app with PM2
-echo Starting the printer-server with PM2... | tee -a %LOGFILE%
-pm2 start dist/src/index.js --name "printer-server" >> %LOGFILE% 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    echo Failed to start printer-server with PM2. Exiting script. | tee -a %LOGFILE%
-    pause
-    exit /b 1
-)
+echo.
+echo Predefined packages : %$programs%
+echo.
 
-REM Save PM2 process list and set up startup
-echo Saving PM2 process list... | tee -a %LOGFILE%
-pm2 save >> %LOGFILE% 2>&1
+:choice_progrs
+echo You have 20 seconds to answer. Default is No.
+choice /c YN /n /t 20 /d N /m "Do you want to install other programs [Y/N]? "
+if errorlevel 2 goto :keep_programs
+if errorlevel 1 goto :add_programs
 
-echo Setting up PM2 to start on boot... | tee -a %LOGFILE%
-FOR /F "tokens=*" %%i IN ('pm2 startup windows -u %USERNAME% --hp %USERPROFILE%') DO %%i >> %LOGFILE% 2>&1
+:: Allows the user to install a custom list of programs
+:add_programs
+echo.
+echo [92mCustom package list[0m
+echo Insert the list of packages you want to install.
+echo [91mWarning[0m you have to manually add the default packages if you want any of them
+echo [92mFind more here[0m https://community.chocolatey.org/packages
+echo.
+set /p $programs=Enter list of packages (separate with space):
+goto :install_programs_install
 
-REM Start the app immediately
-echo Starting the app immediately... | tee -a %LOGFILE%
-pm2 start printer-server >> %LOGFILE% 2>&1
+:: Constinues the instalation with the default programs
+:keep_programs
+echo.
+echo No other programs will be installed
+goto :install_programs_install
 
-echo Script execution completed successfully. Check %LOGFILE% for details. | tee -a %LOGFILE%
+:: Installs the programs selected
+:install_programs_install
+echo.
+echo [92mInstalling Packages...[0m
+powershell -Command "&{ Start-Process powershell -ArgumentList '-command %$program_install% %$programs% -y' -Verb RunAs}"
 
-REM Keep the window open to view messages and log output
-pause
+:node_setup_choice
+echo.
+choice /c YN /n /t 20 /d N /m "Do you want to setup the Node server [Y/N]? "
+if errorlevel 2 goto :exit
+if errorlevel 1 goto :setup_node
+
+:setup_node
+echo.
+echo [92mSetting up Node environment...[0m
+:: Install Node.js and PM2 if not already installed
+powershell -Command "&{ Start-Process powershell -ArgumentList '-command %$program_install% %$node_programs% -y' -Verb RunAs}"
+
+:: Wait a bit for installations to complete
+timeout /t 5 /nobreak
+
+:: Install project dependencies
+echo.
+echo [92mInstalling project dependencies...[0m
+call npm install
+
+echo.
+echo [92mInstalling PM2...[0m
+call npm install -g pm2
+
+:: Start the application with PM2
+echo.
+echo [92mBuilding application...[0m
+call npm run build
+
+echo.
+echo [92mStarting application with PM2...[0m
+call npm run pm2
+
+echo.
+echo [92mNode server setup complete![0m
+goto :exit
+
+:: Upgrades all programs
+:upgrade_programs
+echo.
+echo [92mUpgrading All Packages...[0m
+powershell -Command "&{ Start-Process powershell -ArgumentList '-command %$upgrade_install% -y' -Verb RunAs}"
+goto :exit
+
+:: Stops execution of the script
+:exit
+echo.
+echo [91mExiting...[0m
+goto :eof
+
+:: Extras
+:: color pallette : https://gist.githubusercontent.com/mlocati/fdabcaeb8071d5c75a2d51712db24011/raw/b710612d6320df7e146508094e84b92b34c77d48/win10colors.cmd
+:: chocolatey : https://community.chocolatey.org/
