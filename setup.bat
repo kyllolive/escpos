@@ -6,12 +6,12 @@ set $choco_install=Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net
 
 set $program_install=choco install
 set $upgrade_install=choco upgrade all
-set $programs=googlechrome git vscode sublimetext3 discord k-litecodecpackfull
+set $programs=git
 :: Add nodejs and pm2 to potential installations
 set $node_programs=nodejs.install pm2
 
 :choice
-set /P c=Install Chocolatey, Install/Upgrade packages, or Setup Node Server [[92mY[0m/[91mN[0m]? 
+set /P c=Install Chocolatey, Install/Upgrade packages, or Setup Node Server [[92mY[0m/[91mN[0m]?
 if /I "%c%" EQU "Y" goto :install
 if /I "%c%" EQU "N" goto :exit
 
@@ -91,13 +91,13 @@ choice /c YN /n /t 20 /d N /m "Do you want to setup the Node server [Y/N]? "
 if errorlevel 2 goto :exit
 if errorlevel 1 goto :setup_node
 
-:setup_node
+:setu:setup_node
 echo.
 echo [92mSetting up Node environment...[0m
 :: Install Node.js and PM2 if not already installed
 powershell -Command "&{ Start-Process powershell -ArgumentList '-command %$program_install% %$node_programs% -y' -Verb RunAs}"
 
-:: Wait a bit for installations to complete
+:: Wait for installations to complete
 timeout /t 5 /nobreak
 
 :: Install project dependencies
@@ -105,18 +105,18 @@ echo.
 echo [92mInstalling project dependencies...[0m
 call npm install
 
-echo.
-echo [92mInstalling PM2...[0m
-call npm install -g pm2
+:: Create logs directory
+mkdir logs 2>nul
 
-:: Start the application with PM2
 echo.
 echo [92mBuilding application...[0m
 call npm run build
 
 echo.
-echo [92mStarting application with PM2...[0m
-call npm run pm2
+echo [92mConfiguring PM2...[0m
+call pm2 start pm2.config.js
+call pm2 startup
+call pm2 save
 
 echo.
 echo [92mNode server setup complete![0m
