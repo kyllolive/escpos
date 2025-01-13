@@ -2,9 +2,8 @@
 
 2. Run setup.bat
 
-3. Run pm2 start dist/src/index.js --name "my-app"
+3. Open terminal and run pm2 start dist/src/index.js --name "my-app"
 
+4. Copy startup-print.bat to desktop and create a shortcut of that file
 
-create a bat file the pm2 resurrect command
-create a shortcut of that file
-pasting that shortcut on the startup folder (win+R , shell:startup)
+5. Paste that shortcut on the startup folder (win+R , shell:startup)

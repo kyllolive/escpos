@@ -1,6 +1,7 @@
 import { Printer } from '@node-escpos/core';
 import USB from '@node-escpos/usb-adapter';
 import express from 'express';
+import getMAC from 'getmac';
 
 const router = express.Router();
 
@@ -18,7 +19,6 @@ router.get<{}, any>('/check-status', (req, res) => {
 
 router.post<{}, any>('/', (req, res) => {
   const { body } = req;
-  console.log('body', body);
   const device = new USB();
 
   device.open(async function (err) {
@@ -44,6 +44,22 @@ router.post<{}, any>('/', (req, res) => {
       device.close();
     }
   });
+});
+
+router.get<{}, any>('/mac-address', (req, res) => {
+  try {
+
+    const macAddress = getMAC();
+
+    res.json({
+
+      macAddress,
+
+    });
+  } catch (error) {
+    console.error('Error getting MAC address:', error);
+    res.status(500).json({ message: 'Error getting MAC address' });
+  }
 });
 
 export default router;
